@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import FocusTimer from './FocusTimer';
 
-// Real-world role datasets matching CodeSprint 2026 PPT
+// Real-world role configurations mapped to Slide guidelines
 const ROLE_CONFIGS = {
   'Machine Learning Engineer': {
     title: 'Machine Learning Engineer',
@@ -124,7 +125,6 @@ const ROLE_CONFIGS = {
 };
 
 export default function Dashboard({ user, onLogout }) {
-  // Current user session
   const [currentUser] = useState(() => {
     return user || {
       name: 'Mayank Bhandari',
@@ -133,26 +133,21 @@ export default function Dashboard({ user, onLogout }) {
     };
   });
 
-  // Resolve matching role data
   const userGoal = currentUser.goal || 'Machine Learning Engineer';
   const roleData = ROLE_CONFIGS[userGoal] || ROLE_CONFIGS['Machine Learning Engineer'];
 
-  // Navigation
   const [activePage, setActivePage] = useState('Dashboard');
 
-  // Dynamic Skills State (Role-scoped persistence)
   const [skills, setSkills] = useState(() => {
     const saved = localStorage.getItem(`skills_${currentUser.email}_${userGoal}`);
     return saved ? JSON.parse(saved) : roleData.defaultSkills;
   });
 
-  // Dynamic Tasks State (Role-scoped persistence)
   const [tasks, setTasks] = useState(() => {
     const saved = localStorage.getItem(`tasks_${currentUser.email}_${userGoal}`);
     return saved ? JSON.parse(saved) : roleData.tasks;
   });
 
-  // Metrics
   const [stats, setStats] = useState(() => {
     const saved = localStorage.getItem(`stats_${currentUser.email}`);
     return saved ? JSON.parse(saved) : {
@@ -163,7 +158,6 @@ export default function Dashboard({ user, onLogout }) {
     };
   });
 
-  // Recent Activity Feed
   const [recentActivities, setRecentActivities] = useState(() => {
     const saved = localStorage.getItem(`activities_${currentUser.email}`);
     return saved ? JSON.parse(saved) : [
@@ -175,9 +169,6 @@ export default function Dashboard({ user, onLogout }) {
     ];
   });
 
-  // Submodules State
-  const [timerSeconds, setTimerSeconds] = useState(1500);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [dsaInput, setDsaInput] = useState('function solution(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}');
   const [dsaOutput, setDsaOutput] = useState('');
   const [chatMessages, setChatMessages] = useState([
@@ -190,11 +181,9 @@ export default function Dashboard({ user, onLogout }) {
   const [selectedQuizAnswer, setSelectedQuizAnswer] = useState(null);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
-  // Auto-calculated Overall Progress (0% to 100%)
   const completedCount = tasks.filter(t => t.completed).length;
   const overallProgressPercentage = Math.round((completedCount / tasks.length) * 100);
 
-  // Sync to Storage
   useEffect(() => {
     localStorage.setItem(`skills_${currentUser.email}_${userGoal}`, JSON.stringify(skills));
   }, [skills, currentUser.email, userGoal]);
@@ -211,18 +200,6 @@ export default function Dashboard({ user, onLogout }) {
     localStorage.setItem(`activities_${currentUser.email}`, JSON.stringify(recentActivities));
   }, [recentActivities, currentUser.email]);
 
-  // Pomodoro Timer hook
-  useEffect(() => {
-    let interval = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => setTimerSeconds(prev => prev - 1), 1000);
-    } else if (timerSeconds === 0) {
-      setIsTimerRunning(false);
-      logActivity('Completed 25m Focus Session', 'study');
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
-
   const logActivity = (title, type) => {
     const item = { id: Date.now(), title, time: 'Just now', type };
     setRecentActivities(prev => [item, ...prev]);
@@ -234,7 +211,6 @@ export default function Dashboard({ user, onLogout }) {
     }));
   };
 
-  // Toggle Task Completion and Dynamically Upgrade Skills
   const handleToggleTask = (taskId) => {
     const targetTask = tasks.find(t => t.id === taskId);
     if (!targetTask) return;
@@ -270,12 +246,6 @@ export default function Dashboard({ user, onLogout }) {
       const type = targetTask.category === 'dsa' ? 'dsa' : 'study';
       logActivity(`Completed Task: ${targetTask.title}`, type);
     }
-  };
-
-  const formatTimer = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleSendChat = (e) => {
@@ -315,7 +285,6 @@ export default function Dashboard({ user, onLogout }) {
     { id: 'Leaderboard', label: 'Leaderboard', icon: '🏆' }
   ];
 
-  // Pure dark mode theme matching screenshot
   const bgMain = 'bg-[#070b18] text-slate-100';
   const sidebarBg = 'bg-[#0d1424] border-slate-800/80';
   const topNavBg = 'bg-[#0d1424]/95 border-slate-800/80 backdrop-blur';
@@ -325,7 +294,7 @@ export default function Dashboard({ user, onLogout }) {
   return (
     <div className={`flex min-h-screen font-sans ${bgMain}`}>
       
-      {/* ================= 1. SIDEBAR (MATCHES SCREENSHOT) ================= */}
+      {/* 1. SIDEBAR */}
       <aside className={`w-64 border-r flex flex-col justify-between shrink-0 sticky top-0 h-screen overflow-y-auto ${sidebarBg}`}>
         <div>
           <div className="p-5 border-b border-slate-800/80 flex items-center gap-3">
@@ -359,7 +328,7 @@ export default function Dashboard({ user, onLogout }) {
           </nav>
         </div>
 
-        {/* Dynamic User Profile Card at Sidebar Bottom */}
+        {/* User Card */}
         <div className="p-4 border-t border-slate-800/80 bg-slate-900/60">
           <div className="flex items-center gap-3 mb-2">
             <div className="h-8 w-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow">
@@ -379,7 +348,7 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       </aside>
 
-      {/* ================= 2. MAIN VIEW ================= */}
+      {/* 2. MAIN VIEW */}
       <main className="flex-1 flex flex-col min-w-0">
         
         {/* Top Navbar */}
@@ -391,12 +360,10 @@ export default function Dashboard({ user, onLogout }) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Dark Mode Fixed Badge */}
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-300">
               <span>🌙 Dark Mode</span>
             </div>
 
-            {/* Target Goal Badge */}
             <div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-indigo-950/90 border border-indigo-700/80 text-indigo-300">
               <span>🎯 Goal:</span>
               <span className="font-bold text-white">{userGoal}</span>
@@ -406,10 +373,9 @@ export default function Dashboard({ user, onLogout }) {
 
         <div className="p-8 max-w-6xl mx-auto w-full">
 
-          {/* PAGE 1: EXACT MATCH DASHBOARD */}
+          {/* PAGE 1: DASHBOARD VIEW */}
           {activePage === 'Dashboard' && (
             <div>
-              {/* Header Welcome text & Overall Progress */}
               <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h1 className="text-3xl font-extrabold tracking-tight text-white">
@@ -420,7 +386,6 @@ export default function Dashboard({ user, onLogout }) {
                   </p>
                 </div>
 
-                {/* Overall Plan Progress Widget (0 to 100%) */}
                 <div className={`p-4 rounded-2xl border flex items-center gap-4 min-w-[270px] ${cardBg}`}>
                   <div className="relative h-13 w-13 flex items-center justify-center rounded-full bg-slate-950 border border-indigo-500/40 shrink-0">
                     <span className="text-sm font-black text-indigo-400">{overallProgressPercentage}%</span>
@@ -479,7 +444,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* PPT SLIDE 3: ROLE-SPECIFIC DIAGNOSTIC SKILL ANALYSIS */}
+              {/* Skill Analysis */}
               <div className={`p-6 rounded-3xl border mb-8 ${cardBg}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -515,7 +480,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* PPT SLIDE 5: TODAY'S ADAPTIVE PLAN (0 TO 100% DIFFERENT TASKS FOR EACH ROLE) */}
+              {/* Tasks List */}
               <div className={`p-6 rounded-3xl border mb-8 ${cardBg}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -582,7 +547,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Quick Actions (9 Buttons Directing to their respective pages) */}
+              {/* Quick Actions (9 Buttons Directing to pages) */}
               <div className="mb-8">
                 <h2 className="text-sm font-bold text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
@@ -623,7 +588,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Start Now (4 Cards Directing to submodules) */}
+              {/* Start Now (4 Cards) */}
               <div className="mb-8">
                 <h2 className="text-sm font-bold text-white mb-4">Start Now</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -709,7 +674,15 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 2: STUDY MENTOR */}
+          {/* PAGE 2: FOCUS TIMER COMPONENT INTEGRATED */}
+          {activePage === 'Focus Timer' && (
+            <FocusTimer
+              user={currentUser}
+              onCompleteSession={(mins) => logActivity(`Completed ${mins}m Deep Focus Sprint`, 'study')}
+            />
+          )}
+
+          {/* PAGE 3: STUDY MENTOR */}
           {activePage === 'Study Mentor' && (
             <div className={`p-8 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-6">
@@ -758,7 +731,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 3: DSA PRACTICE (LIVE SANDBOX + TESTS) */}
+          {/* PAGE 4: DSA PRACTICE */}
           {activePage === 'DSA Practice' && (
             <div className={`p-6 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-4">
@@ -792,12 +765,12 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 4: AI ROADMAP */}
+          {/* PAGE 5: AI ROADMAP */}
           {activePage === 'AI Roadmap' && (
             <div className={`p-8 rounded-3xl border ${cardBg}`}>
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-white">🗺️ Goal Roadmap: {roleData.title}</h2>
-                <p className={`text-xs ${subText}`}>Ordered learning stages, prerequisites & milestones</p>
+                <p className={`text-xs ${subText}`}>Ordered learning stages, prerequisites & milestones </p>
               </div>
 
               <div className="space-y-4">
@@ -817,7 +790,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 5: AI ASSISTANT CHAT */}
+          {/* PAGE 6: AI ASSISTANT CHAT */}
           {activePage === 'AI Assistant' && (
             <div className={`max-w-3xl mx-auto h-[550px] flex flex-col rounded-3xl border ${cardBg}`}>
               <div className="p-4 border-b border-slate-800 flex items-center gap-3">
@@ -852,32 +825,6 @@ export default function Dashboard({ user, onLogout }) {
                   Send
                 </button>
               </form>
-            </div>
-          )}
-
-          {/* PAGE 6: FOCUS TIMER */}
-          {activePage === 'Focus Timer' && (
-            <div className={`max-w-lg mx-auto text-center p-8 rounded-3xl border ${cardBg}`}>
-              <span className="text-4xl mb-3 block">⏱️</span>
-              <h2 className="text-2xl font-bold text-white mb-1">Deep Work Pomodoro</h2>
-              <p className={`text-xs mb-8 ${subText}`}>25-minute concentrated sprint for {roleData.title}</p>
-              <div className="text-6xl font-black font-mono text-indigo-400 mb-8 tracking-wider">
-                {formatTimer(timerSeconds)}
-              </div>
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={() => setIsTimerRunning(!isTimerRunning)}
-                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition cursor-pointer"
-                >
-                  {isTimerRunning ? 'Pause Session' : 'Start Focus'}
-                </button>
-                <button
-                  onClick={() => { setIsTimerRunning(false); setTimerSeconds(1500); }}
-                  className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs transition cursor-pointer border border-slate-800"
-                >
-                  Reset
-                </button>
-              </div>
             </div>
           )}
 
