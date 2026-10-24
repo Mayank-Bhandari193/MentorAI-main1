@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import FocusTimer from './FocusTimer';
+import DailyReview from './DailyReview';
 
-// Real-world role configurations mapped to Slide guidelines
+// Real-world role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
   'Machine Learning Engineer': {
     title: 'Machine Learning Engineer',
@@ -328,7 +329,7 @@ export default function Dashboard({ user, onLogout }) {
           </nav>
         </div>
 
-        {/* User Card */}
+        {/* User Profile Card */}
         <div className="p-4 border-t border-slate-800/80 bg-slate-900/60">
           <div className="flex items-center gap-3 mb-2">
             <div className="h-8 w-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow">
@@ -348,7 +349,7 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       </aside>
 
-      {/* 2. MAIN VIEW */}
+      {/* 2. MAIN VIEW AREA */}
       <main className="flex-1 flex flex-col min-w-0">
         
         {/* Top Navbar */}
@@ -373,7 +374,7 @@ export default function Dashboard({ user, onLogout }) {
 
         <div className="p-8 max-w-6xl mx-auto w-full">
 
-          {/* PAGE 1: DASHBOARD VIEW */}
+          {/* PAGE 1: MAIN DASHBOARD */}
           {activePage === 'Dashboard' && (
             <div>
               <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -444,12 +445,12 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Skill Analysis */}
+              {/* Diagnostic Skill Gap Analysis */}
               <div className={`p-6 rounded-3xl border mb-8 ${cardBg}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-bold text-white">Diagnostic Skill Analysis: {roleData.title} </h2>
-                    <p className={`text-[11px] ${subText}`}>Skill scores adapt live as you complete the daily tasks below</p>
+                    <h2 className="text-sm font-bold text-white">Diagnostic Skill Analysis: {roleData.title} [PPT Slide 3]</h2>
+                    <p className={`text-[11px] ${subText}`}>Skill scores adapt live as you complete the daily tasks below[cite: 16, 20]</p>
                   </div>
                   <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
                     currentWeakestSkill.score < 55
@@ -480,11 +481,11 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Tasks List */}
+              {/* Today's Adaptive Plan (0% to 100% Tasks) */}
               <div className={`p-6 rounded-3xl border mb-8 ${cardBg}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-bold text-white">📋 Today's Adaptive Plan (0% to 100% Complete) </h2>
+                    <h2 className="text-sm font-bold text-white">📋 Today's Adaptive Plan (0% to 100% Complete) [PPT Slide 5]</h2>
                     <p className={`text-[11px] ${subText}`}>Tailored roadmap tasks for {roleData.title}</p>
                   </div>
                   <button
@@ -681,14 +682,23 @@ export default function Dashboard({ user, onLogout }) {
               onCompleteSession={(mins) => logActivity(`Completed ${mins}m Deep Focus Sprint`, 'study')}
             />
           )}
+          {/* PAGE 3: DAILY REVIEW COMPONENT */}
+{activePage === 'Daily Review' && (
+  <DailyReview
+    user={currentUser}
+    onReviewSubmitted={(entry) => {
+      logActivity(`Completed Day ${entry.day} Review (${entry.topic})`, 'study');
+    }}
+  />
+)}
 
-          {/* PAGE 3: STUDY MENTOR */}
+          {/* PAGE 4: STUDY MENTOR */}
           {activePage === 'Study Mentor' && (
             <div className={`p-8 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-white">📖 Diagnostic Assessment Quiz ({roleData.title})</h2>
-                  <p className={`text-xs ${subText}`}>Evaluates knowledge and feeds adaptive skill scores </p>
+                  <p className={`text-xs ${subText}`}>Evaluates knowledge and feeds adaptive skill scores [CodeSprint PPT Slide 3][cite: 16]</p>
                 </div>
                 <button
                   onClick={() => {
@@ -731,7 +741,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 4: DSA PRACTICE */}
+          {/* PAGE 5: DSA PRACTICE */}
           {activePage === 'DSA Practice' && (
             <div className={`p-6 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-4">
@@ -765,12 +775,12 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 5: AI ROADMAP */}
+          {/* PAGE 6: AI ROADMAP */}
           {activePage === 'AI Roadmap' && (
             <div className={`p-8 rounded-3xl border ${cardBg}`}>
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-white">🗺️ Goal Roadmap: {roleData.title}</h2>
-                <p className={`text-xs ${subText}`}>Ordered learning stages, prerequisites & milestones </p>
+                <p className={`text-xs ${subText}`}>Ordered learning stages, prerequisites & milestones [CodeSprint PPT Slide 2][cite: 17]</p>
               </div>
 
               <div className="space-y-4">
@@ -790,7 +800,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 6: AI ASSISTANT CHAT */}
+          {/* PAGE 7: AI ASSISTANT CHAT */}
           {activePage === 'AI Assistant' && (
             <div className={`max-w-3xl mx-auto h-[550px] flex flex-col rounded-3xl border ${cardBg}`}>
               <div className="p-4 border-b border-slate-800 flex items-center gap-3">
@@ -829,7 +839,7 @@ export default function Dashboard({ user, onLogout }) {
           )}
 
           {/* FALLBACK FOR OTHER TABS */}
-          {!['Dashboard', 'Focus Timer', 'Study Mentor', 'DSA Practice', 'AI Roadmap', 'AI Assistant'].includes(activePage) && (
+          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'DSA Practice', 'AI Roadmap', 'AI Assistant'].includes(activePage) && (
             <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
               <span className="text-4xl block mb-2">⚡</span>
               <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>
