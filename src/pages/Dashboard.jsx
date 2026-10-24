@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FocusTimer from './FocusTimer';
 import DailyReview from './DailyReview';
 import StudyMentor from './StudyMentor';
+import InterviewPrep from './InterviewPrep';
 
 // Real-world role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
@@ -107,6 +108,7 @@ const ROLE_CONFIGS = {
 };
 
 export default function Dashboard({ user, onLogout }) {
+  // Session User
   const [currentUser] = useState(() => {
     return user || {
       name: 'Mayank Bhandari',
@@ -118,18 +120,22 @@ export default function Dashboard({ user, onLogout }) {
   const userGoal = currentUser.goal || 'Machine Learning Engineer';
   const roleData = ROLE_CONFIGS[userGoal] || ROLE_CONFIGS['Machine Learning Engineer'];
 
+  // Navigation State
   const [activePage, setActivePage] = useState('Dashboard');
 
+  // Dynamic Skills State (Role-scoped persistence)
   const [skills, setSkills] = useState(() => {
     const saved = localStorage.getItem(`skills_${currentUser.email}_${userGoal}`);
     return saved ? JSON.parse(saved) : roleData.defaultSkills;
   });
 
+  // Dynamic Tasks State (Role-scoped persistence)
   const [tasks, setTasks] = useState(() => {
     const saved = localStorage.getItem(`tasks_${currentUser.email}_${userGoal}`);
     return saved ? JSON.parse(saved) : roleData.tasks;
   });
 
+  // Top Metrics
   const [stats, setStats] = useState(() => {
     const saved = localStorage.getItem(`stats_${currentUser.email}`);
     return saved ? JSON.parse(saved) : {
@@ -140,6 +146,7 @@ export default function Dashboard({ user, onLogout }) {
     };
   });
 
+  // Recent Activity Feed
   const [recentActivities, setRecentActivities] = useState(() => {
     const saved = localStorage.getItem(`activities_${currentUser.email}`);
     return saved ? JSON.parse(saved) : [
@@ -151,8 +158,11 @@ export default function Dashboard({ user, onLogout }) {
     ];
   });
 
+  // DSA Sandbox State
   const [dsaInput, setDsaInput] = useState('function solution(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}');
   const [dsaOutput, setDsaOutput] = useState('');
+
+  // AI Assistant Chat State
   const [chatMessages, setChatMessages] = useState([
     {
       sender: 'ai',
@@ -161,9 +171,11 @@ export default function Dashboard({ user, onLogout }) {
   ]);
   const [chatInput, setChatInput] = useState('');
 
+  // 0% to 100% Progress Calculation
   const completedCount = tasks.filter(t => t.completed).length;
   const overallProgressPercentage = Math.round((completedCount / tasks.length) * 100);
 
+  // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem(`skills_${currentUser.email}_${userGoal}`, JSON.stringify(skills));
   }, [skills, currentUser.email, userGoal]);
@@ -265,6 +277,7 @@ export default function Dashboard({ user, onLogout }) {
     { id: 'Leaderboard', label: 'Leaderboard', icon: '🏆' }
   ];
 
+  // Strictly Dark Mode Palette
   const bgMain = 'bg-[#070b18] text-slate-100';
   const sidebarBg = 'bg-[#0d1424] border-slate-800/80';
   const topNavBg = 'bg-[#0d1424]/95 border-slate-800/80 backdrop-blur';
@@ -682,7 +695,17 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 5: DSA PRACTICE */}
+          {/* PAGE 5: INTERVIEW PREP COMPONENT INTEGRATED */}
+          {activePage === 'Interview Prep' && (
+            <InterviewPrep
+              user={currentUser}
+              onCompleteSession={(result) => {
+                logActivity(`Completed Mock Interview (${result.overallStatus})`, 'study');
+              }}
+            />
+          )}
+
+          {/* PAGE 6: DSA PRACTICE (LIVE SANDBOX) */}
           {activePage === 'DSA Practice' && (
             <div className={`p-6 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-4">
@@ -716,12 +739,12 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 6: AI ROADMAP */}
+          {/* PAGE 7: AI ROADMAP */}
           {activePage === 'AI Roadmap' && (
             <div className={`p-8 rounded-3xl border ${cardBg}`}>
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-white">🗺️ Goal Roadmap: {roleData.title}</h2>
-                <p className={`text-xs ${subText}`}>Ordered learning stages, prerequisites & milestones [CodeSprint PPT Slide 2][cite: 17]</p>
+                <p className={`text-xs ${subText}`}>Ordered learning stages, prerequisites & milestones [CodeSprint PPT Slide 2]</p>
               </div>
 
               <div className="space-y-4">
@@ -741,7 +764,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 7: AI ASSISTANT CHAT */}
+          {/* PAGE 8: AI ASSISTANT CHAT */}
           {activePage === 'AI Assistant' && (
             <div className={`max-w-3xl mx-auto h-[550px] flex flex-col rounded-3xl border ${cardBg}`}>
               <div className="p-4 border-b border-slate-800 flex items-center gap-3">
@@ -779,8 +802,8 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* FALLBACK FOR OTHER TABS */}
-          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'DSA Practice', 'AI Roadmap', 'AI Assistant'].includes(activePage) && (
+          {/* FALLBACK FOR REMAINING TABS (English Practice, AI Learning, Activity Tracker, Morning Routine, Leaderboard) */}
+          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'DSA Practice', 'AI Roadmap', 'AI Assistant'].includes(activePage) && (
             <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
               <span className="text-4xl block mb-2">⚡</span>
               <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>

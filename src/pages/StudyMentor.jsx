@@ -252,7 +252,7 @@ export default function StudyMentor({ user, onAssessmentComplete }) {
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              50 comprehensive questions per tier to ground adaptive recommendations [CodeSprint PPT Slide 3][cite: 16]
+              50 comprehensive questions per tier to ground adaptive recommendations [CodeSprint ]
             </p>
           </div>
         </div>
@@ -448,7 +448,7 @@ export default function StudyMentor({ user, onAssessmentComplete }) {
             Compute Comprehensive Diagnostic Score
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Evaluates accuracy across all 50 questions to calibrate dashboard weak skill alerts[cite: 16].
+            Evaluates accuracy across all 50 questions to calibrate dashboard weak skill alerts.
           </p>
         </div>
 
@@ -479,7 +479,7 @@ export default function StudyMentor({ user, onAssessmentComplete }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-[#070b18] border border-slate-800">
               <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-                Detected Bottleneck / Weak Skill[cite: 16]
+                Detected Bottleneck / Weak Skill
               </span>
               <div className="text-xs font-extrabold text-white mt-1">
                 {evaluationReport.weakArea}
@@ -488,7 +488,7 @@ export default function StudyMentor({ user, onAssessmentComplete }) {
 
             <div className="p-4 rounded-2xl bg-[#070b18] border border-slate-800">
               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
-                Adaptive Recommendation[cite: 16]
+                Adaptive Recommendation
               </span>
               <div className="text-xs font-semibold text-slate-300 mt-1 leading-relaxed">
                 {evaluationReport.recommendation}
@@ -497,7 +497,7 @@ export default function StudyMentor({ user, onAssessmentComplete }) {
           </div>
 
           <div className="text-[11px] text-slate-400 text-right pt-1">
-            ✓ Evaluated and synced with Student Dashboard at {evaluationReport.timestamp}[cite: 16]
+            ✓ Evaluated and synced with Student Dashboard at {evaluationReport.timestamp}
           </div>
         </div>
       )}
