@@ -5,8 +5,9 @@ import StudyMentor from './StudyMentor';
 import InterviewPrep from './InterviewPrep';
 import Roadmap from './Roadmap';
 import MorningRoutine from './MorningRoutine';
+import AIAssistant from './AIAssistant';
 
-// Real-world role configurations mapped to CodeSprint 2026 PPT
+// Role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
   'Machine Learning Engineer': {
     title: 'Machine Learning Engineer',
@@ -156,13 +157,6 @@ export default function Dashboard({ user, onLogout }) {
 
   const [dsaInput, setDsaInput] = useState('function solution(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}');
   const [dsaOutput, setDsaOutput] = useState('');
-  const [chatMessages, setChatMessages] = useState([
-    {
-      sender: 'ai',
-      text: `Namaste ${currentUser.name}! Main aapka AI Mentor hoon. Aapke selected role "${userGoal}" ke mutabiq aapka current plan active hai. Weak area ko target karne ke liye task complete karein!`
-    }
-  ]);
-  const [chatInput, setChatInput] = useState('');
 
   const completedCount = tasks.filter(t => t.completed).length;
   const overallProgressPercentage = Math.round((completedCount / tasks.length) * 100);
@@ -229,25 +223,6 @@ export default function Dashboard({ user, onLogout }) {
       const type = targetTask.category === 'dsa' ? 'dsa' : 'study';
       logActivity(`Completed Task: ${targetTask.title}`, type);
     }
-  };
-
-  const handleSendChat = (e) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    const msg = chatInput;
-    setChatMessages(prev => [...prev, { sender: 'user', text: msg }]);
-    setChatInput('');
-    logActivity(`AI Query: "${msg.slice(0, 25)}..."`, 'study');
-
-    setTimeout(() => {
-      setChatMessages(prev => [
-        ...prev,
-        {
-          sender: 'ai',
-          text: `Aapki preparation abhi ${overallProgressPercentage}% complete hai. ${userGoal} ke liye agla recommendation: ${roleData.roadmap.find(r => r.status === 'In Progress')?.title || 'Practice weak topics'}.`
-        }
-      ]);
-    }, 500);
   };
 
   const currentWeakestSkill = [...skills].sort((a, b) => a.score - b.score)[0];
@@ -431,7 +406,7 @@ export default function Dashboard({ user, onLogout }) {
               <div className={`p-6 rounded-3xl border mb-8 ${cardBg}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-bold text-white">Diagnostic Skill Analysis: {roleData.title} [PPT Slide 3]</h2>
+                    <h2 className="text-sm font-bold text-white">Diagnostic Skill Analysis: {roleData.title}</h2>
                     <p className={`text-[11px] ${subText}`}>Skill scores adapt live as you complete the daily tasks below</p>
                   </div>
                   <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
@@ -467,7 +442,7 @@ export default function Dashboard({ user, onLogout }) {
               <div className={`p-6 rounded-3xl border mb-8 ${cardBg}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-bold text-white">📋 Today's Adaptive Plan (0% to 100% Complete) [PPT Slide 5]</h2>
+                    <h2 className="text-sm font-bold text-white">📋 Today's Adaptive Plan (0% to 100% Complete)</h2>
                     <p className={`text-[11px] ${subText}`}>Tailored roadmap tasks for {roleData.title}</p>
                   </div>
                   <button
@@ -657,7 +632,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 2: FOCUS TIMER COMPONENT INTEGRATED */}
+          {/* PAGE 2: FOCUS TIMER */}
           {activePage === 'Focus Timer' && (
             <FocusTimer
               user={currentUser}
@@ -665,7 +640,7 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 3: DAILY REVIEW COMPONENT INTEGRATED */}
+          {/* PAGE 3: DAILY REVIEW */}
           {activePage === 'Daily Review' && (
             <DailyReview
               user={currentUser}
@@ -675,7 +650,7 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 4: STUDY MENTOR COMPONENT INTEGRATED */}
+          {/* PAGE 4: STUDY MENTOR */}
           {activePage === 'Study Mentor' && (
             <StudyMentor
               user={currentUser}
@@ -685,7 +660,7 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 5: INTERVIEW PREP COMPONENT INTEGRATED */}
+          {/* PAGE 5: INTERVIEW PREP */}
           {activePage === 'Interview Prep' && (
             <InterviewPrep
               user={currentUser}
@@ -695,12 +670,12 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 6: AI ROADMAP COMPONENT INTEGRATED */}
+          {/* PAGE 6: AI ROADMAP */}
           {activePage === 'AI Roadmap' && (
             <Roadmap user={currentUser} />
           )}
 
-          {/* PAGE 7: MORNING ROUTINE COMPONENT INTEGRATED */}
+          {/* PAGE 7: MORNING ROUTINE */}
           {activePage === 'Morning Routine' && (
             <MorningRoutine
               user={currentUser}
@@ -710,7 +685,12 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 8: DSA PRACTICE (LIVE SANDBOX) */}
+          {/* PAGE 8: AI ASSISTANT */}
+          {activePage === 'AI Assistant' && (
+            <AIAssistant user={currentUser} />
+          )}
+
+          {/* PAGE 9: DSA PRACTICE */}
           {activePage === 'DSA Practice' && (
             <div className={`p-6 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-4">
@@ -744,46 +724,8 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 9: AI ASSISTANT CHAT */}
-          {activePage === 'AI Assistant' && (
-            <div className={`max-w-3xl mx-auto h-[550px] flex flex-col rounded-3xl border ${cardBg}`}>
-              <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-                <span className="text-2xl">🤖</span>
-                <div>
-                  <h3 className="text-sm font-bold text-white">AI Mentor Companion</h3>
-                  <p className="text-[10px] text-emerald-400 font-bold">● Active for {roleData.title}</p>
-                </div>
-              </div>
-
-              <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                {chatMessages.map((m, i) => (
-                  <div key={i} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed ${
-                      m.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-950 border border-slate-800 text-slate-200'
-                    }`}>
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={handleSendChat} className="p-3 border-t border-slate-800 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ask anything..."
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
-                <button type="submit" className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 cursor-pointer">
-                  Send
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* FALLBACK FOR REMAINING TABS (English Practice, AI Learning, Activity Tracker, Leaderboard) */}
-          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'DSA Practice', 'AI Assistant'].includes(activePage) && (
+          {/* FALLBACK FOR REMAINING TABS */}
+          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'AI Assistant', 'DSA Practice'].includes(activePage) && (
             <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
               <span className="text-4xl block mb-2">⚡</span>
               <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>
