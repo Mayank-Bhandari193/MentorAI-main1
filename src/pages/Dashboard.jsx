@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import FocusTimer from './FocusTimer';
 import DailyReview from './DailyReview';
+import StudyMentor from './StudyMentor';
 
 // Real-world role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
@@ -26,11 +27,6 @@ const ROLE_CONFIGS = {
       { step: '03', title: 'Classical ML Algorithms & Scikit-Learn Pipelines', status: 'Active', tag: 'Prerequisite' },
       { step: '04', title: 'Deep Learning, PyTorch & LLM Fine-Tuning', status: 'Upcoming', tag: 'Advanced' }
     ],
-    quiz: {
-      question: 'What is the output of print(len([1, 2, [3, 4]])) in Python?',
-      options: ['A) 4', 'B) 3 (Correct)', 'C) 2', 'D) TypeError'],
-      correct: 1
-    },
     dsaProblem: 'LeetCode #1: Two Sum (Hash Map O(N) Pattern)'
   },
 
@@ -56,11 +52,6 @@ const ROLE_CONFIGS = {
       { step: '03', title: 'High-Concurrency System Design & Caching', status: 'In Progress', tag: 'Weak Area Focus' },
       { step: '04', title: 'Docker Containers, CI/CD & AWS Deployment', status: 'Upcoming', tag: 'DevOps' }
     ],
-    quiz: {
-      question: 'In React, what does an empty dependency array [] in useEffect signify?',
-      options: ['A) Runs on every state update', 'B) Runs only once on component mount (Correct)', 'C) Cancels component rendering', 'D) Triggers an infinite loop'],
-      correct: 1
-    },
     dsaProblem: 'LeetCode #146: LRU Cache (Doubly Linked List + Hash Map)'
   },
 
@@ -86,11 +77,6 @@ const ROLE_CONFIGS = {
       { step: '03', title: 'Dynamic Programming (Memoization to Tabulation)', status: 'In Progress', tag: 'Weak Area Focus' },
       { step: '04', title: 'FAANG / Tier-1 Live Timed Mock Coding Drill', status: 'Upcoming', tag: 'Placement' }
     ],
-    quiz: {
-      question: 'What is the optimal time complexity of finding a cycle in a linked list using Floyd\'s Tortoise and Hare?',
-      options: ['A) O(N) Time, O(1) Space (Correct)', 'B) O(N^2) Time, O(N) Space', 'C) O(log N) Time, O(1) Space', 'D) O(N log N) Time, O(N) Space'],
-      correct: 0
-    },
     dsaProblem: 'LeetCode #198: House Robber (1D Dynamic Programming)'
   },
 
@@ -116,11 +102,6 @@ const ROLE_CONFIGS = {
       { step: '03', title: 'Deep Neural Networks & Transformer Models', status: 'In Progress', tag: 'Weak Area Focus' },
       { step: '04', title: 'Model Registry, MLOps & Production Inference APIs', status: 'Upcoming', tag: 'MLOps' }
     ],
-    quiz: {
-      question: 'Which loss function is best suited for a Multi-Class Classification problem?',
-      options: ['A) Mean Squared Error (MSE)', 'B) Categorical Cross-Entropy (Correct)', 'C) Binary Cross-Entropy', 'D) Hinge Loss'],
-      correct: 1
-    },
     dsaProblem: 'Vector Search & Cosine Similarity Algorithm'
   }
 };
@@ -179,8 +160,6 @@ export default function Dashboard({ user, onLogout }) {
     }
   ]);
   const [chatInput, setChatInput] = useState('');
-  const [selectedQuizAnswer, setSelectedQuizAnswer] = useState(null);
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
 
   const completedCount = tasks.filter(t => t.completed).length;
   const overallProgressPercentage = Math.round((completedCount / tasks.length) * 100);
@@ -486,7 +465,7 @@ export default function Dashboard({ user, onLogout }) {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-sm font-bold text-white">📋 Today's Adaptive Plan (0% to 100% Complete) [PPT Slide 5]</h2>
-                    <p className={`text-[11px] ${subText}`}>Tailored roadmap tasks for {roleData.title}</p>
+                    <p className={`text-[11px] ${subText}`}>Tailored roadmap tasks for {roleData.title}[cite: 16]</p>
                   </div>
                   <button
                     onClick={() => {
@@ -682,63 +661,25 @@ export default function Dashboard({ user, onLogout }) {
               onCompleteSession={(mins) => logActivity(`Completed ${mins}m Deep Focus Sprint`, 'study')}
             />
           )}
-          {/* PAGE 3: DAILY REVIEW COMPONENT */}
-{activePage === 'Daily Review' && (
-  <DailyReview
-    user={currentUser}
-    onReviewSubmitted={(entry) => {
-      logActivity(`Completed Day ${entry.day} Review (${entry.topic})`, 'study');
-    }}
-  />
-)}
 
-          {/* PAGE 4: STUDY MENTOR */}
+          {/* PAGE 3: DAILY REVIEW COMPONENT INTEGRATED */}
+          {activePage === 'Daily Review' && (
+            <DailyReview
+              user={currentUser}
+              onReviewSubmitted={(review) => {
+                logActivity(`Completed Day ${review.day} Review (${review.topic})`, 'study');
+              }}
+            />
+          )}
+
+          {/* PAGE 4: STUDY MENTOR COMPONENT INTEGRATED */}
           {activePage === 'Study Mentor' && (
-            <div className={`p-8 rounded-3xl border ${cardBg}`}>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-white">📖 Diagnostic Assessment Quiz ({roleData.title})</h2>
-                  <p className={`text-xs ${subText}`}>Evaluates knowledge and feeds adaptive skill scores [CodeSprint PPT Slide 3][cite: 16]</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setQuizSubmitted(true);
-                    logActivity(`Completed Diagnostic Quiz for ${roleData.title}`, 'study');
-                  }}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer"
-                >
-                  Submit & Re-evaluate
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] font-bold text-indigo-400 bg-indigo-950 px-2.5 py-0.5 rounded border border-indigo-800">QUESTION 01 (CORE)</span>
-                  <p className="text-xs font-bold text-white mt-2 mb-3">
-                    {roleData.quiz.question}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {roleData.quiz.options.map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedQuizAnswer(i)}
-                        className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                          selectedQuizAnswer === i ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {quizSubmitted && (
-                  <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800 text-emerald-300 text-xs font-medium">
-                    ✅ Diagnostic verified! Skill analysis updated. Recommendation: Continue with {currentWeakestSkill.name} drills.
-                  </div>
-                )}
-              </div>
-            </div>
+            <StudyMentor
+              user={currentUser}
+              onAssessmentComplete={(report) => {
+                logActivity(`Completed 50-Question Diagnostic Assessment (${report.score}%)`, 'study');
+              }}
+            />
           )}
 
           {/* PAGE 5: DSA PRACTICE */}
