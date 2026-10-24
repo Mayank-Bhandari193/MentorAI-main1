@@ -4,6 +4,7 @@ import DailyReview from './DailyReview';
 import StudyMentor from './StudyMentor';
 import InterviewPrep from './InterviewPrep';
 import Roadmap from './Roadmap';
+import MorningRoutine from './MorningRoutine';
 
 // Real-world role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
@@ -158,7 +159,7 @@ export default function Dashboard({ user, onLogout }) {
   const [chatMessages, setChatMessages] = useState([
     {
       sender: 'ai',
-      text: `Namaste ${currentUser.name}! Hu tamaro AI Mentor chhu. Tamare pasand karela role "${userGoal}" mujab tamaro plan active chhe. Weak skill sudharva mate task complete karo!`
+      text: `Namaste ${currentUser.name}! Main aapka AI Mentor hoon. Aapke selected role "${userGoal}" ke mutabiq aapka current plan active hai. Weak area ko target karne ke liye task complete karein!`
     }
   ]);
   const [chatInput, setChatInput] = useState('');
@@ -243,7 +244,7 @@ export default function Dashboard({ user, onLogout }) {
         ...prev,
         {
           sender: 'ai',
-          text: `Tamari preparation halma ${overallProgressPercentage}% chhe. ${userGoal} mate aagalni advice: ${roleData.roadmap.find(r => r.status === 'In Progress')?.title || 'Practice weak topics'}.`
+          text: `Aapki preparation abhi ${overallProgressPercentage}% complete hai. ${userGoal} ke liye agla recommendation: ${roleData.roadmap.find(r => r.status === 'In Progress')?.title || 'Practice weak topics'}.`
         }
       ]);
     }, 500);
@@ -310,7 +311,7 @@ export default function Dashboard({ user, onLogout }) {
           </nav>
         </div>
 
-        {/* User Card */}
+        {/* User Profile Card */}
         <div className="p-4 border-t border-slate-800/80 bg-slate-900/60">
           <div className="flex items-center gap-3 mb-2">
             <div className="h-8 w-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow">
@@ -364,7 +365,7 @@ export default function Dashboard({ user, onLogout }) {
                     Welcome back, <span className="text-indigo-400">{currentUser.name}</span>!
                   </h1>
                   <p className={`text-xs mt-1 ${subText}`}>
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — Aaj no divas successful banaviye.
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — Let's make today count.
                   </p>
                 </div>
 
@@ -431,7 +432,7 @@ export default function Dashboard({ user, onLogout }) {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-sm font-bold text-white">Diagnostic Skill Analysis: {roleData.title} [PPT Slide 3]</h2>
-                    <p className={`text-[11px] ${subText}`}>Daily tasks complete karvathi skill scores live upgrade thay chhe[cite: 16, 20]</p>
+                    <p className={`text-[11px] ${subText}`}>Skill scores adapt live as you complete the daily tasks below</p>
                   </div>
                   <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
                     currentWeakestSkill.score < 55
@@ -467,7 +468,7 @@ export default function Dashboard({ user, onLogout }) {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-sm font-bold text-white">📋 Today's Adaptive Plan (0% to 100% Complete) [PPT Slide 5]</h2>
-                    <p className={`text-[11px] ${subText}`}>{roleData.title} mate custom tailored roadmap tasks[cite: 16]</p>
+                    <p className={`text-[11px] ${subText}`}>Tailored roadmap tasks for {roleData.title}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -529,7 +530,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick Actions (9 Buttons Directing to pages) */}
               <div className="mb-8">
                 <h2 className="text-sm font-bold text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
@@ -570,7 +571,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Start Now */}
+              {/* Start Now (4 Cards) */}
               <div className="mb-8">
                 <h2 className="text-sm font-bold text-white mb-4">Start Now</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -582,7 +583,7 @@ export default function Dashboard({ user, onLogout }) {
                       <div className="h-12 w-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl shrink-0 font-bold">📖</div>
                       <div>
                         <h4 className="text-sm font-bold text-white">New Study Session</h4>
-                        <p className={`text-xs mt-0.5 ${subText}`}>{roleData.title} mate diagnostic evaluation</p>
+                        <p className={`text-xs mt-0.5 ${subText}`}>Diagnostic quiz for {roleData.title}</p>
                       </div>
                     </div>
                     <span className="text-slate-400 font-bold text-base">›</span>
@@ -610,7 +611,7 @@ export default function Dashboard({ user, onLogout }) {
                       <div className="h-12 w-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl shrink-0 font-bold">💼</div>
                       <div>
                         <h4 className="text-sm font-bold text-white">Mock Interview</h4>
-                        <p className={`text-xs mt-0.5 ${subText}`}>{roleData.title} mate AI technical interviewer</p>
+                        <p className={`text-xs mt-0.5 ${subText}`}>AI technical interviewer for {roleData.title}</p>
                       </div>
                     </div>
                     <span className="text-slate-400 font-bold text-base">›</span>
@@ -624,7 +625,7 @@ export default function Dashboard({ user, onLogout }) {
                       <div className="h-12 w-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-xl shrink-0 font-bold">🗺️</div>
                       <div>
                         <h4 className="text-sm font-bold text-white">AI Roadmap</h4>
-                        <p className={`text-xs mt-0.5 ${subText}`}>Tamara career goal no step-by-step roadmap[cite: 17]</p>
+                        <p className={`text-xs mt-0.5 ${subText}`}>Prerequisite-aware plan for your goal</p>
                       </div>
                     </div>
                     <span className="text-slate-400 font-bold text-base">›</span>
@@ -637,7 +638,7 @@ export default function Dashboard({ user, onLogout }) {
                 <h2 className="text-sm font-bold text-white mb-4">Recent Activity</h2>
                 <div className={`p-6 rounded-2xl border ${cardBg}`}>
                   {recentActivities.length === 0 ? (
-                    <p className={`text-sm text-center py-4 ${subText}`}>Koi activity nathi. Daily tasks sharu karo!</p>
+                    <p className={`text-sm text-center py-4 ${subText}`}>No activities logged yet. Start tracking your day!</p>
                   ) : (
                     <div className="divide-y divide-slate-800">
                       {recentActivities.slice(0, 5).map((act) => (
@@ -699,17 +700,27 @@ export default function Dashboard({ user, onLogout }) {
             <Roadmap user={currentUser} />
           )}
 
-          {/* PAGE 7: DSA PRACTICE (LIVE SANDBOX) */}
+          {/* PAGE 7: MORNING ROUTINE COMPONENT INTEGRATED */}
+          {activePage === 'Morning Routine' && (
+            <MorningRoutine
+              user={currentUser}
+              onCompleteRoutine={(data) => {
+                logActivity(`Logged Morning Routine (${data.percentage}% Alignment)`, 'study');
+              }}
+            />
+          )}
+
+          {/* PAGE 8: DSA PRACTICE (LIVE SANDBOX) */}
           {activePage === 'DSA Practice' && (
             <div className={`p-6 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-lg font-bold text-white">💻 Live DSA Sandbox ({roleData.dsaProblem})</h2>
-                  <p className={`text-xs ${subText}`}>{roleData.title} mate target algorithm practice</p>
+                  <p className={`text-xs ${subText}`}>Targeted algorithm practice for {roleData.title}</p>
                 </div>
                 <button
                   onClick={() => {
-                    setDsaOutput('JavaScript V8 Engine test cases chalavi rahya chhe...\n[PASS] Test 1: Case verification passed.\n[PASS] Test 2: Edge condition passed.\n[PASS] Test 3: Time limit constraints satisfied.\nSuccess: Badha test cases pass thaya! +1 Solved DSA problem.');
+                    setDsaOutput('Executing test cases against JavaScript V8 Engine...\n[PASS] Test 1: Case verification passed.\n[PASS] Test 2: Edge condition passed.\n[PASS] Test 3: Time limit constraints satisfied.\nSuccess: All test cases passed! +1 Solved DSA problem.');
                     logActivity(`Solved ${roleData.dsaProblem}`, 'dsa');
                   }}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow cursor-pointer"
@@ -733,7 +744,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* PAGE 8: AI ASSISTANT CHAT */}
+          {/* PAGE 9: AI ASSISTANT CHAT */}
           {activePage === 'AI Assistant' && (
             <div className={`max-w-3xl mx-auto h-[550px] flex flex-col rounded-3xl border ${cardBg}`}>
               <div className="p-4 border-b border-slate-800 flex items-center gap-3">
@@ -759,7 +770,7 @@ export default function Dashboard({ user, onLogout }) {
               <form onSubmit={handleSendChat} className="p-3 border-t border-slate-800 flex gap-2">
                 <input
                   type="text"
-                  placeholder="Kai pan puchho (e.g., Mara weak area ne jaldi improve kevi rite karvu?)..."
+                  placeholder="Ask anything..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -771,12 +782,12 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* FALLBACK FOR REMAINING TABS */}
-          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'DSA Practice', 'AI Assistant'].includes(activePage) && (
+          {/* FALLBACK FOR REMAINING TABS (English Practice, AI Learning, Activity Tracker, Leaderboard) */}
+          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'DSA Practice', 'AI Assistant'].includes(activePage) && (
             <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
               <span className="text-4xl block mb-2">⚡</span>
               <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>
-              <p className={`text-xs mb-6 ${subText}`}>{roleData.title} mate active module chhe.</p>
+              <p className={`text-xs mb-6 ${subText}`}>Active module for {roleData.title}.</p>
               <button
                 onClick={() => {
                   logActivity(`Logged milestone in ${activePage}`, 'study');
