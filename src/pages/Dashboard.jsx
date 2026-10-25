@@ -8,6 +8,7 @@ import MorningRoutine from './MorningRoutine';
 import AIAssistant from './AIAssistant';
 import EnglishPractice from './EnglishPractice';
 import AILearning from './AILearning';
+import DSAPractice from './DSAPractice';
 
 // Role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
@@ -156,9 +157,6 @@ export default function Dashboard({ user, onLogout }) {
       { id: 5, title: 'Started Focus Timer', time: 'Just now', type: 'study' }
     ];
   });
-
-  const [dsaInput, setDsaInput] = useState('function solution(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}');
-  const [dsaOutput, setDsaOutput] = useState('');
 
   const completedCount = tasks.filter(t => t.completed).length;
   const overallProgressPercentage = Math.round((completedCount / tasks.length) * 100);
@@ -712,38 +710,14 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 11: DSA PRACTICE */}
+          {/* PAGE 11: DSA PRACTICE (LEETCODE ARENA) */}
           {activePage === 'DSA Practice' && (
-            <div className={`p-6 rounded-3xl border ${cardBg}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-bold text-white">💻 Live DSA Sandbox ({roleData.dsaProblem})</h2>
-                  <p className={`text-xs ${subText}`}>Targeted algorithm practice for {roleData.title}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setDsaOutput('Executing test cases against JavaScript V8 Engine...\n[PASS] Test 1: Case verification passed.\n[PASS] Test 2: Edge condition passed.\n[PASS] Test 3: Time limit constraints satisfied.\nSuccess: All test cases passed! +1 Solved DSA problem.');
-                    logActivity(`Solved ${roleData.dsaProblem}`, 'dsa');
-                  }}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow cursor-pointer"
-                >
-                  ▶ Run Code & Evaluate
-                </button>
-              </div>
-
-              <textarea
-                value={dsaInput}
-                onChange={(e) => setDsaInput(e.target.value)}
-                rows={11}
-                className="w-full font-mono text-xs bg-slate-950 text-emerald-400 p-4 rounded-2xl border border-slate-800 focus:outline-none"
-              />
-
-              {dsaOutput && (
-                <div className="mt-4 p-4 rounded-xl bg-slate-950 font-mono text-xs text-emerald-300 border border-emerald-900/40">
-                  <pre>{dsaOutput}</pre>
-                </div>
-              )}
-            </div>
+            <DSAPractice
+              user={currentUser}
+              onSolveProblem={(problem) => {
+                logActivity(`Solved LeetCode #${problem.number}: ${problem.title}`, 'dsa');
+              }}
+            />
           )}
 
           {/* FALLBACK FOR REMAINING TABS (Activity Tracker, Leaderboard) */}
