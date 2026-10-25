@@ -7,8 +7,9 @@ import Roadmap from './Roadmap';
 import MorningRoutine from './MorningRoutine';
 import AIAssistant from './AIAssistant';
 import EnglishPractice from './EnglishPractice';
+import AILearning from './AILearning';
 
-// Real-world role configurations mapped to CodeSprint 2026 PPT
+// Role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
   'Machine Learning Engineer': {
     title: 'Machine Learning Engineer',
@@ -506,7 +507,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick Actions (9 Buttons Directing to pages) */}
               <div className="mb-8">
                 <h2 className="text-sm font-bold text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
@@ -547,7 +548,7 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Start Now */}
+              {/* Start Now (4 Cards) */}
               <div className="mb-8">
                 <h2 className="text-sm font-bold text-white mb-4">Start Now</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -701,7 +702,17 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* PAGE 10: DSA PRACTICE */}
+          {/* PAGE 10: AI LEARNING */}
+          {activePage === 'AI Learning' && (
+            <AILearning
+              user={currentUser}
+              onCompleteLesson={(lessonTitle) => {
+                logActivity(`Mastered AI Lesson: ${lessonTitle}`, 'study');
+              }}
+            />
+          )}
+
+          {/* PAGE 11: DSA PRACTICE */}
           {activePage === 'DSA Practice' && (
             <div className={`p-6 rounded-3xl border ${cardBg}`}>
               <div className="flex items-center justify-between mb-4">
@@ -735,8 +746,8 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* FALLBACK FOR REMAINING TABS (AI Learning, Activity Tracker, Leaderboard) */}
-          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'AI Assistant', 'English Practice', 'DSA Practice'].includes(activePage) && (
+          {/* FALLBACK FOR REMAINING TABS (Activity Tracker, Leaderboard) */}
+          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'AI Assistant', 'English Practice', 'AI Learning', 'DSA Practice'].includes(activePage) && (
             <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
               <span className="text-4xl block mb-2">⚡</span>
               <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>
