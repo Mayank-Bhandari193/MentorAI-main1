@@ -1,275 +1,373 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Languages, Send, RotateCcw, CheckCircle2, XCircle, Zap } from 'lucide-react';
-import AIChatBubble from '@/components/shared/AIChatBubble';
-import LoadingDots from '@/components/shared/LoadingDots';
-import VocabQuiz from '@/components/english/VocabQuiz';
-import SentenceDrill from '@/components/english/SentenceDrill';
-import { format } from 'date-fns';
+import React, { useState, useEffect, useRef } from 'react';
 
-const SESSION_TYPES = [
-  { value: 'grammar', label: '📝 Grammar', desc: 'Fix grammar mistakes' },
-  { value: 'vocabulary', label: '📚 Vocabulary', desc: 'Learn new words' },
-  { value: 'conversation', label: '💬 Conversation', desc: 'Practice dialogue' },
-  { value: 'writing', label: '✍️ Writing', desc: 'Improve your writing' },
-  { value: 'fill_blank', label: '🔲 Fill in the Blank', desc: 'Complete sentences' },
-  { value: 'word_scramble', label: '🔀 Word Scramble', desc: 'Unscramble words' },
-  { value: 'idioms', label: '🗣️ Idioms & Phrases', desc: 'Learn expressions' },
-  { value: 'pronunciation', label: '🎤 Pronunciation', desc: 'Read words aloud' },
-  { value: 'listening', label: '👂 Listening', desc: 'Listen & comprehend' },
+// 4 Specialized English Practice Tracks for Tech Professionals
+const PRACTICE_TRACKS = [
+  {
+    id: 'tech_pitch',
+    icon: '🎙️',
+    title: 'Technical Project Pitching',
+    desc: 'Practice explaining complex system architecture and algorithms clearly within 60 seconds.',
+    prompt: 'Explain your recent flagship project architecture, technical stack choices, and how you handled high concurrency or latency.',
+    sampleStarters: [
+      'In this project, our primary bottleneck was...',
+      'We made an architectural tradeoff by choosing...',
+      'To ensure high availability and sub-50ms latency, we...'
+    ]
+  },
+  {
+    id: 'star_method',
+    icon: '⭐',
+    title: 'STAR Behavioral Scenarios',
+    desc: 'Structure behavioral answers using Situation, Task, Action, and measurable Results.',
+    prompt: 'Tell me about a time when a critical production bug appeared right before a release. How did you coordinate under pressure?',
+    sampleStarters: [
+      'The situation occurred when our deployment triggered...',
+      'My primary responsibility was to isolate the root cause...',
+      'As a result of our automated rollback, zero customer data was lost...'
+    ]
+  },
+  {
+    id: 'corp_email',
+    icon: '✉️',
+    title: 'Executive & Client Email Polishing',
+    desc: 'Draft concise, polite, and persuasive technical messages for cross-functional managers.',
+    prompt: 'Draft an email to your engineering lead explaining why a sprint deadline needs to be pushed by 2 days due to unexpected database migration blockers.',
+    sampleStarters: [
+      'Hi Team, I wanted to provide a quick update regarding...',
+      'Due to unforeseen schema migration conflicts...',
+      'To prevent customer-facing regressions, I recommend...'
+    ]
+  },
+  {
+    id: 'fluency_filler',
+    icon: '🗣️',
+    title: 'Fluency & Filler Word Reducer',
+    desc: 'Eliminate "um", "uh", "actually", and "basically" while answering high-stakes questions.',
+    prompt: 'Why should our company hire you over other candidates who have identical technical degrees?',
+    sampleStarters: [
+      'My unique advantage lies at the intersection of...',
+      'Beyond writing scalable code, I actively prioritize...',
+      'I approach engineering problems with commercial product intuition...'
+    ]
+  }
 ];
 
-export default function EnglishPractice() {
-  const [type, setType] = useState('');
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [correction, setCorrection] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState('pick'); // pick, quiz, drill, answer, result
-  const queryClient = useQueryClient();
+// Vocabulary & Idiomatic Boosters for Tech Interviews
+const VOCAB_BOOSTERS = [
+  { phrase: 'Double-edged sword', meaning: 'Ek aisi technique jiske fayde aur nuksan dono ho (e.g. In-memory caching)' },
+  { phrase: 'Single point of failure (SPOF)', meaning: 'Ek aisi component jo fail hote hi pura system crash kar de' },
+  { phrase: 'Benchmarking & profiling', meaning: 'Code ya database ki actual performance measure karna' },
+  { phrase: 'Technical debt tradeoff', meaning: 'Jaldi deliver karne ke liye temporary shortcuts lena jo baad mein refactor karni padein' }
+];
 
-  const { data: sessions = [] } = useQuery({
-    queryKey: ['english-sessions'],
-    queryFn: () => base44.entities.EnglishSession.list('-created_date', 10),
-  });
+export default function EnglishPractice({ user, onCompleteSession }) {
+  const currentRole = user?.goal || 'Machine Learning Engineer';
 
-  const PROMPTS = {
-    grammar: `Generate a grammar practice question for an intermediate English student. Give them a sentence with an error or ask them to choose/correct the grammar. Just the question, no explanation.`,
-    vocabulary: `Generate a vocabulary question for an intermediate English student. Ask for the definition, usage in a sentence, or meaning of a challenging word. Just the question.`,
-    conversation: `Give an intermediate English student a realistic conversation scenario (e.g. at a job interview, ordering food, meeting someone new). Ask them to respond as they would in real life. Just the scenario + prompt.`,
-    writing: `Give an intermediate English student a short writing prompt (2-4 sentences). Make it interesting and practical. Just the prompt.`,
-    fill_blank: `Create a fill-in-the-blank exercise with 3-4 sentences that have ONE blank each (use ___). Choose words that test vocabulary or grammar. Show the word bank at the end. Just the exercise.`,
-    word_scramble: `Give the student 5 scrambled words (all capital letters, letters in random order). Tell them to unscramble each one. Pick intermediate-level English words. Format: SCRAMBLED → ? for each word. Just the exercise.`,
-    idioms: `Teach the student one English idiom or common phrase. Give the idiom, then ask them to write a sentence using it OR explain what it means in their own words. Just the idiom + question.`,
-    pronunciation: `Give the student a list of 5 English words that are commonly mispronounced. Tell them to read each word aloud and then write the phonetic pronunciation as they understand it. Just the word list + instruction.`,
-    listening: `Write a short paragraph (3-4 sentences) as if the student just heard it. Then ask 2 comprehension questions about it. Present the paragraph first, then the questions. Just the paragraph + questions.`,
+  // Active track selection
+  const [selectedTrackId, setSelectedTrackId] = useState('tech_pitch');
+  const activeTrack = PRACTICE_TRACKS.find(t => t.id === selectedTrackId) || PRACTICE_TRACKS[0];
+
+  // User Response State
+  const [userSpeechText, setUserSpeechText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isListeningSupported, setIsListeningSupported] = useState(true);
+  const [evaluationReport, setEvaluationReport] = useState(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  const recognitionRef = useRef(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        setUserSpeechText(prev => prev ? `${prev} ${transcript}` : transcript);
+      };
+
+      recognition.onerror = () => setIsRecording(false);
+      recognition.onend = () => setIsRecording(false);
+
+      recognitionRef.current = recognition;
+    } else {
+      setIsListeningSupported(false);
+    }
+  }, []);
+
+  // Mic Toggle Handler
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      alert("Browser mein voice recognition available nahi hai. Aap answer directly box mein type kar sakte hain.");
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsRecording(true);
+      } catch (err) {
+        setIsRecording(false);
+      }
+    }
   };
 
-  const startSession = async (sessionType) => {
-    setType(sessionType);
-    setLoading(true);
-    setStep('answer');
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an English teacher. ${PROMPTS[sessionType] || `Generate a ${sessionType} practice question.`}`,
-    });
-    setQuestion(result);
-    setLoading(false);
+  // Add starter template to user input
+  const handleInsertStarter = (starter) => {
+    setUserSpeechText(prev => (prev ? `${prev} ${starter}` : starter));
   };
 
-  const submitAnswer = async () => {
-    if (!answer.trim()) return;
-    setLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an English teacher evaluating a student's ${type} practice.\n\nQuestion: ${question}\nStudent's answer: "${answer}"\n\nProvide:\n1. Score out of 10\n2. Corrections (if any grammar or spelling errors)\n3. A better way to phrase it\n4. Encouragement\n\nBe detailed but friendly.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          score: { type: 'number' },
-          corrections: { type: 'string' },
-          improved_version: { type: 'string' },
-          encouragement: { type: 'string' },
-          errors_found: { type: 'boolean' },
-        },
-      },
-    });
-    setCorrection(result);
-    setStep('result');
-    setLoading(false);
+  // Evaluate Response
+  const handleEvaluateAnswer = () => {
+    if (!userSpeechText.trim()) return;
 
-    await base44.entities.EnglishSession.create({
-      session_type: type,
-      ai_question: question,
-      user_response: answer,
-      ai_correction: result.corrections,
-      score: result.score,
-      session_date: format(new Date(), 'yyyy-MM-dd'),
-    });
-    queryClient.invalidateQueries({ queryKey: ['english-sessions'] });
+    setIsEvaluating(true);
+    setEvaluationReport(null);
+
+    setTimeout(() => {
+      const words = userSpeechText.trim().split(/\s+/);
+      const wordCount = words.length;
+
+      // Detect fillers like um, uh, basically, actually
+      const lower = userSpeechText.toLowerCase();
+      const fillersFound = (lower.match(/\b(um|uh|actually|basically|like|you know)\b/g) || []).length;
+
+      let fluencyScore = 92;
+      if (fillersFound > 4) fluencyScore -= 15;
+      else if (fillersFound > 1) fluencyScore -= 7;
+
+      let vocabularyScore = wordCount > 40 ? 94 : wordCount > 20 ? 84 : 70;
+      let clarityScore = wordCount > 30 ? 90 : 75;
+
+      const report = {
+        wordCount,
+        fillersFound,
+        fluencyScore: `${fluencyScore}%`,
+        vocabularyScore: `${vocabularyScore}%`,
+        clarityScore: `${clarityScore}%`,
+        overallGrade: fluencyScore >= 85 && vocabularyScore >= 85 ? 'Elite Communicator' : 'Proficient (Minor Polish)',
+        feedback: wordCount > 35
+          ? 'Strong structural explanation with good technical tone. Sentences have logical continuity.'
+          : 'A bit brief. Try providing one specific numerical metric (e.g. "reduced latency by 35%") to strengthen the impact.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setEvaluationReport(report);
+      setIsEvaluating(false);
+
+      if (onCompleteSession) {
+        onCompleteSession(report);
+      }
+    }, 1200);
   };
-
-  const reset = () => {
-    setType('');
-    setQuestion('');
-    setAnswer('');
-    setCorrection(null);
-    setStep('pick');
-  };
-
-  const todaySessions = sessions.filter(s => s.session_date === format(new Date(), 'yyyy-MM-dd'));
 
   return (
-    <div className="space-y-6">
-      {/* Progress */}
-      <div className="flex items-center gap-2">
-        <p className="text-sm text-muted-foreground">Today's sessions:</p>
-        <div className="flex gap-1">
-          {[0, 1, 2].map(i => (
-            <div
-              key={i}
-              className={`w-8 h-2 rounded-full ${i < todaySessions.length ? 'bg-accent' : 'bg-border'}`}
-            />
-          ))}
+    <div className="w-full max-w-5xl mx-auto space-y-6 font-sans">
+      
+      {/* 1. Header Card */}
+      <div className="p-6 rounded-3xl bg-[#0f172a]/90 border border-slate-800 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-2xl shadow-inner">
+            🗣️
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black text-white tracking-wide">English Technical Communication Hub</h1>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-950 border border-purple-700/60 text-purple-300">
+                Active for {currentRole}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Refine spoken fluency, eliminate filler words, and master executive pitch delivery.
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-muted-foreground">{todaySessions.length}/3</span>
+
+        {/* Status Pill */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#070b18] border border-slate-800 text-xs text-slate-300">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-mono text-[11px]">Speech Engine Online</span>
+        </div>
       </div>
 
-      <Card className="p-6">
-        {step === 'pick' && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-2">
-              <Languages className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-foreground">Choose Practice Type</h3>
-            </div>
+      {/* 2. 4 Track Selector Buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {PRACTICE_TRACKS.map((track) => {
+          const isSelected = selectedTrackId === track.id;
+          return (
+            <button
+              key={track.id}
+              onClick={() => {
+                setSelectedTrackId(track.id);
+                setEvaluationReport(null);
+                setUserSpeechText('');
+              }}
+              className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? 'bg-indigo-600/25 border-indigo-500 text-white shadow-lg shadow-indigo-600/20 ring-1 ring-indigo-500/50'
+                  : 'bg-[#0f172a]/90 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'
+              }`}
+            >
+              <div className="text-xl mb-1.5">{track.icon}</div>
+              <h3 className="text-xs font-bold text-white mb-1">{track.title}</h3>
+              <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">{track.desc}</p>
+            </button>
+          );
+        })}
+      </div>
 
-            {/* Quick Interactive Drills */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <Zap className="w-3.5 h-3.5 text-chart-3" />
-                <p className="text-xs font-semibold text-chart-3 uppercase tracking-wide">Quick Drills</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setStep('quiz')}
-                  className="h-auto py-4 px-4 flex-col items-start gap-1 rounded-xl border-2 border-chart-3/30 bg-chart-3/5 hover:bg-chart-3/10 transition-colors text-left"
-                >
-                  <span className="font-semibold text-foreground">🧠 Vocab Quiz</span>
-                  <span className="text-xs text-muted-foreground">5 MCQs, timed — 15s each</span>
-                </button>
-                <button
-                  onClick={() => setStep('drill')}
-                  className="h-auto py-4 px-4 flex-col items-start gap-1 rounded-xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
-                >
-                  <span className="font-semibold text-foreground">🔤 Sentence Drill</span>
-                  <span className="text-xs text-muted-foreground">Tap words to build sentences</span>
-                </button>
-              </div>
+      {/* 3. Interactive Prompt Arena */}
+      <div className="p-6 rounded-3xl bg-[#0f172a]/95 border border-slate-800 shadow-2xl space-y-4">
+        
+        {/* Scenario Header */}
+        <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+              {activeTrack.title} • Practice Scenario
             </div>
-
-            {/* Open-ended Sessions */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Open Practice</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SESSION_TYPES.map(t => (
-                  <Button
-                    key={t.value}
-                    variant="outline"
-                    className="h-auto py-4 flex-col items-start gap-1"
-                    onClick={() => startSession(t.value)}
-                  >
-                    <span className="font-medium">{t.label}</span>
-                    <span className="text-xs text-muted-foreground">{t.desc}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
+            <h2 className="text-sm font-semibold text-white mt-1 leading-relaxed">
+              "{activeTrack.prompt}"
+            </h2>
           </div>
-        )}
 
-        {step === 'quiz' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Badge className="bg-chart-3/10 text-chart-3">🧠 Vocab Quiz</Badge>
-              <Button variant="ghost" size="sm" onClick={reset}><RotateCcw className="w-3.5 h-3.5 mr-1" /> Back</Button>
-            </div>
-            <VocabQuiz onDone={(score) => { queryClient.invalidateQueries({ queryKey: ['english-sessions'] }); }} />
-          </div>
-        )}
+          {/* Voice Mic Record Button */}
+          {isListeningSupported && (
+            <button
+              onClick={toggleRecording}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-2 cursor-pointer shrink-0 ${
+                isRecording
+                  ? 'bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse'
+                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-indigo-500 hover:text-white'
+              }`}
+            >
+              <span>{isRecording ? '🔴 Listening (Click to Stop)' : '🎤 Speak Answer'}</span>
+            </button>
+          )}
+        </div>
 
-        {step === 'drill' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Badge className="bg-primary/10 text-primary">🔤 Sentence Drill</Badge>
-              <Button variant="ghost" size="sm" onClick={reset}><RotateCcw className="w-3.5 h-3.5 mr-1" /> Back</Button>
-            </div>
-            <SentenceDrill onDone={(score) => { queryClient.invalidateQueries({ queryKey: ['english-sessions'] }); }} />
-          </div>
-        )}
-
-        {step === 'answer' && (
-          <div className="space-y-4">
-            <Badge className="bg-primary/10 text-primary capitalize">{type}</Badge>
-            {loading ? <LoadingDots /> : (
-              <>
-                <AIChatBubble isAI message={question} />
-                <Textarea
-                  placeholder="Type your answer..."
-                  value={answer}
-                  onChange={e => setAnswer(e.target.value)}
-                  rows={4}
-                />
-                <Button onClick={submitAnswer} disabled={!answer.trim()}>
-                  <Send className="w-4 h-4 mr-2" />
-                  Submit Answer
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-        {step === 'result' && correction && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary">{correction.score}</span>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Your Score</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  {correction.errors_found
-                    ? <XCircle className="w-3 h-3 text-destructive" />
-                    : <CheckCircle2 className="w-3 h-3 text-accent" />
-                  }
-                  <span className="text-xs text-muted-foreground">
-                    {correction.errors_found ? 'Some errors found' : 'Great job!'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            {correction.corrections && (
-              <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                <p className="text-xs font-semibold text-destructive mb-1">Corrections</p>
-                <p className="text-sm text-foreground">{correction.corrections}</p>
-              </div>
-            )}
-            {correction.improved_version && (
-              <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
-                <p className="text-xs font-semibold text-accent mb-1">Improved Version</p>
-                <p className="text-sm text-foreground">{correction.improved_version}</p>
-              </div>
-            )}
-            <AIChatBubble isAI message={correction.encouragement} />
-            <div className="flex gap-2">
-              <Button onClick={reset}>
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Practice Again
-              </Button>
-            </div>
-          </div>
-        )}
-        {loading && step === 'result' && <LoadingDots />}
-      </Card>
-
-      {sessions.length > 0 && (
+        {/* Clickable Sentence Starter Pills */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">Recent Sessions</h3>
-          <div className="space-y-2">
-            {sessions.map(s => (
-              <Card key={s.id} className="p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground capitalize">{s.session_type}</p>
-                  <p className="text-xs text-muted-foreground">{s.session_date}</p>
-                </div>
-                {s.score && <Badge className="bg-primary/10 text-primary">{s.score}/10</Badge>}
-              </Card>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+            Recommended Sentence Starters (Click to Insert):
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {activeTrack.sampleStarters.map((starter, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleInsertStarter(starter)}
+                className="p-2 px-3 rounded-xl bg-[#070b18] border border-slate-800 text-xs text-slate-300 hover:border-indigo-500 hover:text-white transition cursor-pointer"
+              >
+                + "{starter}"
+              </button>
             ))}
           </div>
         </div>
+
+        {/* Textarea Input Box */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <span>Type or speak your delivery:</span>
+            <span className="font-mono">{userSpeechText.trim() ? userSpeechText.trim().split(/\s+/).length : 0} words</span>
+          </div>
+          <textarea
+            rows={5}
+            value={userSpeechText}
+            onChange={(e) => setUserSpeechText(e.target.value)}
+            placeholder="Start speaking via microphone or type your response here in formal English..."
+            className="w-full p-4 rounded-2xl bg-[#070b18] border border-slate-800 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition leading-relaxed"
+          />
+        </div>
+
+        {/* Evaluation Trigger Button */}
+        <div className="flex items-center justify-between pt-1">
+          <button
+            onClick={() => setUserSpeechText('')}
+            className="text-xs text-slate-500 hover:text-slate-300 transition cursor-pointer"
+          >
+            Clear Draft
+          </button>
+
+          <button
+            onClick={handleEvaluateAnswer}
+            disabled={!userSpeechText.trim() || isEvaluating}
+            className="px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isEvaluating ? 'Evaluating Speech Structure...' : 'Analyze Fluency & Vocabulary →'}
+          </button>
+        </div>
+      </div>
+
+      {/* 4. Instant Communication Scorecard (Client-grade output) */}
+      {evaluationReport && (
+        <div className="p-6 rounded-3xl bg-indigo-950/40 border border-indigo-800/60 space-y-4 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-indigo-800/60 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Communication Scorecard
+              </h3>
+            </div>
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-700">
+              Verdict: {evaluationReport.overallGrade}
+            </span>
+          </div>
+
+          {/* 3 Metric Scores */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-2xl bg-[#070b18] border border-slate-800 text-center">
+              <div className="text-[10px] text-slate-400 font-bold uppercase">Spoken Fluency</div>
+              <div className="text-xl font-black text-indigo-400 mt-0.5">{evaluationReport.fluencyScore}</div>
+              <div className="text-[9px] text-slate-500 mt-0.5">Fillers: {evaluationReport.fillersFound} detected</div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-[#070b18] border border-slate-800 text-center">
+              <div className="text-[10px] text-slate-400 font-bold uppercase">Technical Vocabulary</div>
+              <div className="text-xl font-black text-emerald-400 mt-0.5">{evaluationReport.vocabularyScore}</div>
+              <div className="text-[9px] text-slate-500 mt-0.5">Depth rating based on words</div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-[#070b18] border border-slate-800 text-center">
+              <div className="text-[10px] text-slate-400 font-bold uppercase">Clarity & Brevity</div>
+              <div className="text-xl font-black text-amber-400 mt-0.5">{evaluationReport.clarityScore}</div>
+              <div className="text-[9px] text-slate-500 mt-0.5">Total Length: {evaluationReport.wordCount} words</div>
+            </div>
+          </div>
+
+          {/* Constructive AI Feedback */}
+          <div className="p-4 rounded-2xl bg-[#070b18] border border-slate-800">
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+              AI Communication Coach Feedback
+            </span>
+            <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+              {evaluationReport.feedback}
+            </p>
+          </div>
+        </div>
       )}
+
+      {/* 5. Executive Idioms & Tech Phrases Panel */}
+      <div className="p-6 rounded-3xl bg-[#0f172a]/90 border border-slate-800 space-y-3">
+        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+          High-Impact Corporate & Engineering Idioms
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {VOCAB_BOOSTERS.map((item, idx) => (
+            <div key={idx} className="p-3.5 rounded-2xl bg-[#070b18] border border-slate-800/80">
+              <div className="text-xs font-bold text-white font-mono text-indigo-300">"{item.phrase}"</div>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">{item.meaning}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }

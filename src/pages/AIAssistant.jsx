@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Domain Knowledge Matrix with Instant 1.5s Intelligent Engine Responses
+// Domain Knowledge Matrix with Instant Intelligent Engine Responses
 const QUERY_KNOWLEDGE_BASE = [
   {
     keywords: ['weak', 'improve', 'score', 'kam', 'badhao', 'skills', 'diagnostic'],
-    response: `🎯 **Diagnostic Skill Gap Strategy:**\n\n1. **Target the Lowest Metric First**: Aapke dashboard par jo skill 55% se kam (Rose badge) hai, uspar daily pehle do sprints lagayein.\n2. **Task Boost Leverage**: Dashboard ke daily tasks check karein; har task +10% se +20% specific score boost karta hai.\n3. **30-Min Spaced Repetition**: Roz shaam ko 1 puraana concept revise karein taaki cognitive decay na ho.`
+    response: `🎯 **Diagnostic Skill Gap Strategy:**\n\n1. **Target the Lowest Metric First**: Dashboard par jo skill 55% se kam (Rose badge) hai, uspar daily pehle do sprints lagayein.\n2. **Task Boost Leverage**: Dashboard ke daily tasks check karein; har task +10% se +20% specific score boost karta hai.\n3. **30-Min Spaced Repetition**: Roz shaam ko 1 puraana concept revise karein taaki cognitive decay na ho.`
   },
   {
     keywords: ['dsa', 'leetcode', 'two sum', 'sliding window', 'algorithm', 'complexity', 'array'],
-    response: `💻 **Algorithmic Mastery Pattern:**\n\n* **Hash Map Lookup (O(N) Time, O(N) Space)**: Nested brute-force loops $O(N^2)$ ko hatane ke liye hamesha complement store karein: \`target - current\`.\n* **Two Pointers**: Agar input array sorted hai, toh opposite ends par do pointers rakh kar boundary shrink karein ($O(1)$ Space).\n* **Sliding Window**: Subarray sum ya substring problems mein right pointer expand karein aur condition violate hone par left shrink karein.`
+    response: `💻 **Algorithmic Mastery Pattern:**\n\n* **Hash Map Lookup (O(N) Time, O(N) Space)**: Nested brute-force loops O(N^2) ko hatane ke liye complement store karein: \`target - current\`.\n* **Two Pointers**: Agar input array sorted hai, toh opposite ends par do pointers rakh kar boundary shrink karein (O(1) Space).\n* **Sliding Window**: Subarray sum ya substring problems mein right pointer expand karein aur condition violate hone par left shrink karein.`
   },
   {
     keywords: ['react', 'next', 'frontend', 're-render', 'performance', 'tailwind', 'hooks'],
@@ -32,7 +32,7 @@ const QUERY_KNOWLEDGE_BASE = [
   }
 ];
 
-// 6 Fast Prompt Pills for 1-Click Asking
+// Quick Action Prompts
 const QUICK_PROMPTS = [
   "🎯 Mera weak skill kaise jaldi improve hoga?",
   "💻 Two Sum O(N) optimal pattern explain karo",
@@ -44,14 +44,14 @@ const QUICK_PROMPTS = [
 
 export default function AIAssistant({ user }) {
   const currentRole = user?.goal || 'Machine Learning Engineer';
-  const userName = user?.name || 'Mayank';
+  const userName = user?.name || 'Candidate';
 
   const [chatMessages, setChatMessages] = useState(() => {
     return [
       {
         id: 'msg_0',
         sender: 'ai',
-        text: `Namaste **${userName}**! Main aapka 24/7 AI Career Mentor hoon. Aapka target role **${currentRole}** set hai.\n\nAap niche diye gaye chips par click kar sakte hain ya apna koi bhi technical sawal type karein. Main 2 seconds ke andar solution provide karunga!`,
+        text: `Namaste **${userName}**! Main aapka 24/7 AI Career Mentor hoon. Aapka target role **${currentRole}** set hai.\n\nAap niche diye gaye chips par click kar sakte hain ya apna koi bhi technical sawal type karein. Main solution provide karunga!`,
         time: 'Just now'
       }
     ];
@@ -89,14 +89,14 @@ export default function AIAssistant({ user }) {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Copy to Clipboard
+  // Copy Message to Clipboard
   const handleCopy = (msgId, text) => {
     navigator.clipboard.writeText(text);
     setCopiedId(msgId);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // 2-Second Deterministic AI Response Generator
+  // Query Execution
   const executeQuery = (queryText) => {
     if (!queryText.trim()) return;
 
@@ -110,7 +110,6 @@ export default function AIAssistant({ user }) {
     setInputQuery('');
     setIsTyping(true);
 
-    // Exact 1.5 - 2.0s Realistic Response Latency
     setTimeout(() => {
       const lowerQuery = queryText.toLowerCase();
       let matchedResponse = null;
@@ -157,7 +156,7 @@ export default function AIAssistant({ user }) {
   return (
     <div className="w-full max-w-5xl mx-auto space-y-4 font-sans">
       
-      {/* 1. Header Bar */}
+      {/* Header Bar */}
       <div className="p-5 rounded-3xl bg-[#0f172a]/95 border border-slate-800 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-xl shadow-lg shadow-indigo-600/30">
@@ -176,7 +175,7 @@ export default function AIAssistant({ user }) {
           </div>
         </div>
 
-        {/* Quick Toolbar */}
+        {/* Action Toolbar */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportChat}
@@ -193,7 +192,7 @@ export default function AIAssistant({ user }) {
         </div>
       </div>
 
-      {/* 2. Interactive Prompt Chips (Quick Questions) */}
+      {/* Quick Questions Chips */}
       <div className="p-4 rounded-2xl bg-[#0f172a]/80 border border-slate-800/80 space-y-2">
         <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
           <span>⚡ Suggested Quick Inquiries</span>
@@ -212,7 +211,7 @@ export default function AIAssistant({ user }) {
         </div>
       </div>
 
-      {/* 3. Main Chat Stream Container */}
+      {/* Main Chat Stream Container */}
       <div className="p-6 rounded-3xl bg-[#0f172a]/95 border border-slate-800 shadow-2xl flex flex-col h-[520px]">
         
         {/* Messages Scroll Area */}
@@ -226,7 +225,7 @@ export default function AIAssistant({ user }) {
                 key={msg.id}
                 className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-fadeIn`}
               >
-                {/* Message Header */}
+                {/* Header info */}
                 <div className="flex items-center gap-2 mb-1 text-[10px] text-slate-500 font-mono">
                   <span>{isUser ? `${userName} (You)` : 'MentorAI Brain'}</span>
                   <span>• {msg.time}</span>
@@ -243,7 +242,7 @@ export default function AIAssistant({ user }) {
                   {msg.text}
                 </div>
 
-                {/* AI Bubble Action Bar (Copy & Voice) */}
+                {/* AI Bubble Action Bar */}
                 {!isUser && (
                   <div className="flex items-center gap-2 mt-1.5 pl-1 text-[10px]">
                     <button
@@ -279,7 +278,7 @@ export default function AIAssistant({ user }) {
           <div ref={chatEndRef} />
         </div>
 
-        {/* 4. Query Input Form */}
+        {/* Input Box Form */}
         <form onSubmit={handleSubmit} className="mt-4 pt-3 border-t border-slate-800 flex gap-2">
           <input
             type="text"
