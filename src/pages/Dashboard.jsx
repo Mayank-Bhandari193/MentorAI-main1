@@ -9,8 +9,9 @@ import AIAssistant from './AIAssistant';
 import EnglishPractice from './EnglishPractice';
 import AILearning from './AILearning';
 import DSAPractice from './DSAPractice';
+import ActivityTracker from './ActivityTracker';
 
-// Role configurations mapped to CodeSprint 2026 PPT
+// Real-world role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
   'Machine Learning Engineer': {
     title: 'Machine Learning Engineer',
@@ -720,10 +721,20 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
-          {/* FALLBACK FOR REMAINING TABS (Activity Tracker, Leaderboard) */}
-          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'AI Assistant', 'English Practice', 'AI Learning', 'DSA Practice'].includes(activePage) && (
+          {/* PAGE 12: ACTIVITY TRACKER */}
+          {activePage === 'Activity Tracker' && (
+            <ActivityTracker
+              user={currentUser}
+              onActivityLogged={(entry) => {
+                logActivity(entry.title, entry.type || 'study');
+              }}
+            />
+          )}
+
+          {/* FALLBACK FOR REMAINING TABS (Leaderboard) */}
+          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'AI Assistant', 'English Practice', 'AI Learning', 'DSA Practice', 'Activity Tracker'].includes(activePage) && (
             <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
-              <span className="text-4xl block mb-2">⚡</span>
+              <span className="text-4xl block mb-2">🏆</span>
               <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>
               <p className={`text-xs mb-6 ${subText}`}>Active module for {roleData.title}.</p>
               <button
