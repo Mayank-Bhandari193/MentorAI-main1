@@ -1,118 +1,316 @@
-import React from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Trophy, Flame, Code2, BookOpen, Crown, Medal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
-export default function Leaderboard() {
-  const { data: allStudy = [] } = useQuery({
-    queryKey: ['leaderboard-study'],
-    queryFn: () => base44.entities.StudySession.list('-created_date', 200),
+export default function Leaderboard({ user, onClaimPoints }) {
+  const userName = user?.name || 'Mayank Bhandari';
+  const userEmail = user?.email || 'mayankbhandari267@gmail.com';
+  const userRole = user?.goal || 'Machine Learning Engineer';
+
+  const userStatsKey = `mentor_user_stats_${userEmail}`;
+  const registryKey = 'mentor_global_leaderboard_registry';
+
+  // Current logged in user score state
+  const [userStats, setUserStats] = useState(() => {
+    try {
+      const saved = localStorage.getItem(userStatsKey);
+      return saved ? JSON.parse(saved) : { xp: 0, streak: 1, solvedCount: 0 };
+    } catch {
+      return { xp: 0, streak: 1, solvedCount: 0 };
+    }
   });
 
-  const { data: allDSA = [] } = useQuery({
-    queryKey: ['leaderboard-dsa'],
-    queryFn: () => base44.entities.DSASession.list('-created_date', 200),
-  });
+  const [leaderboardList, setLeaderboardList] = useState([]);
+  const [justBoosted, setJustBoosted] = useState(false);
+  const [boostNotice, setBoostNotice] = useState('');
 
-  const { data: allInterview = [] } = useQuery({
-    queryKey: ['leaderboard-interview'],
-    queryFn: () => base44.entities.InterviewSession.list('-created_date', 200),
-  });
+  // Sync state & register user in real-time
+  const syncUserToLeaderboard = (stats) => {
+    try {
+      const saved = localStorage.getItem(registryKey);
+      let list = saved ? JSON.parse(saved) : [];
 
-  // Aggregate per user
-  const userMap = {};
-  const add = (email, field, val) => {
-    if (!email) return;
-    if (!userMap[email]) userMap[email] = { email, study: 0, dsa: 0, interviews: 0, totalScore: 0, sessions: 0 };
-    userMap[email][field] += val;
+      // Determine dynamic badge
+      let badge = 'Rookie Scout';
+      let badgeColor = 'border-slate-700 bg-slate-900 text-slate-300';
+      if (stats.xp >= 1500) {
+        badge = 'Grandmaster';
+        badgeColor = 'border-amber-500/80 bg-amber-950/80 text-amber-300';
+      } else if (stats.xp >= 800) {
+        badge = 'Master';
+        badgeColor = 'border-purple-500/80 bg-purple-950/80 text-purple-300';
+      } else if (stats.xp >= 300) {
+        badge = 'Diamond Elite';
+        badgeColor = 'border-indigo-500/80 bg-indigo-950/80 text-indigo-300';
+      } else if (stats.xp > 0) {
+        badge = 'Active Explorer';
+        badgeColor = 'border-emerald-500/80 bg-emerald-950/80 text-emerald-300';
+      }
+
+      const existingIndex = list.findIndex(u => u.email === userEmail);
+      const userObj = {
+        id: `user_${userEmail}`,
+        name: userName,
+        email: userEmail,
+        role: userRole,
+        avatar: '⭐',
+        xp: stats.xp,
+        streak: stats.streak,
+        solvedCount: stats.solvedCount,
+        badge,
+        badgeColor
+      };
+
+      if (existingIndex !== -1) {
+        list[existingIndex] = userObj;
+      } else {
+        list.push(userObj);
+      }
+
+      localStorage.setItem(registryKey, JSON.stringify(list));
+      localStorage.setItem(userStatsKey, JSON.stringify(stats));
+      setLeaderboardList(list);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  allStudy.forEach(s => { add(s.created_by, 'study', 1); add(s.created_by, 'totalScore', s.score || 0); add(s.created_by, 'sessions', 1); });
-  allDSA.forEach(s => { add(s.created_by, 'dsa', 1); add(s.created_by, 'totalScore', s.score || 0); add(s.created_by, 'sessions', 1); });
-  allInterview.forEach(s => { add(s.created_by, 'interviews', 1); add(s.created_by, 'sessions', 1); });
+  // Initial Sync on load + Listen to system-wide custom event
+  useEffect(() => {
+    syncUserToLeaderboard(userStats);
 
-  const ranked = Object.values(userMap)
-    .map(u => ({ ...u, avgScore: u.sessions ? (u.totalScore / u.sessions).toFixed(1) : 0 }))
-    .sort((a, b) => b.sessions - a.sessions);
+    const handleCustomXPEvent = (e) => {
+      const addedXP = e.detail?.points || 150;
+      const reason = e.detail?.reason || 'Task Completed';
 
-  const rankIcons = [
-    <Crown className="w-5 h-5 text-yellow-500" />,
-    <Medal className="w-5 h-5 text-gray-400" />,
-    <Medal className="w-5 h-5 text-amber-600" />,
-  ];
+      setUserStats(prev => {
+        const nextStats = {
+          ...prev,
+          xp: prev.xp + addedXP,
+          solvedCount: prev.solvedCount + 1
+        };
+        syncUserToLeaderboard(nextStats);
+        return nextStats;
+      });
 
-  const getInitials = (email) => email ? email.split('@')[0].slice(0, 2).toUpperCase() : '??';
-  const getName = (email) => email ? email.split('@')[0].replace(/[._]/g, ' ') : 'Unknown';
+      setBoostNotice(`+${addedXP} XP: ${reason}`);
+      setJustBoosted(true);
+      setTimeout(() => setJustBoosted(false), 2500);
+    };
+
+    window.addEventListener('mentor_xp_event', handleCustomXPEvent);
+    return () => window.removeEventListener('mentor_xp_event', handleCustomXPEvent);
+  }, [userEmail, userName, userRole]);
+
+  // Handle direct button click inside Leaderboard page
+  const handleAddLivePoints = (pts, taskTitle) => {
+    const nextStats = {
+      ...userStats,
+      xp: userStats.xp + pts,
+      solvedCount: userStats.solvedCount + 1
+    };
+    setUserStats(nextStats);
+    syncUserToLeaderboard(nextStats);
+
+    setBoostNotice(`+${pts} XP earned for "${taskTitle}"!`);
+    setJustBoosted(true);
+    setTimeout(() => setJustBoosted(false), 2500);
+
+    if (onClaimPoints) {
+      onClaimPoints(pts, taskTitle);
+    }
+  };
+
+  // Live rank calculation
+  const rankedList = [...leaderboardList]
+    .sort((a, b) => b.xp - a.xp)
+    .map((candidate, idx) => ({
+      ...candidate,
+      rank: idx + 1,
+      isCurrentUser: candidate.email === userEmail
+    }));
+
+  const myRank = rankedList.find(u => u.isCurrentUser)?.rank || 1;
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Trophy className="w-5 h-5 text-chart-3" />
-          <h3 className="font-semibold">Leaderboard</h3>
+    <div className="w-full max-w-5xl mx-auto space-y-6 font-sans">
+      
+      {/* 1. Header Banner */}
+      <div className="p-6 rounded-3xl bg-[#0f172a]/90 border border-slate-800 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-2xl shadow-inner">
+            🏆
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black text-white tracking-wide">Developer Arena Leaderboard</h1>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-950/60 text-emerald-300">
+                ● Live Auto-Sync Active
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Dashboard tasks aur DSA Practice complete karte hi points yahan live add hote hain.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-5">Rankings based on total sessions completed.</p>
 
-        {ranked.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No data yet — start studying to appear here!</p>
-        ) : (
-          <div className="space-y-3">
-            {ranked.map((user, i) => (
-              <div
-                key={user.email}
-                className={`flex items-center gap-3 p-3 rounded-xl ${i === 0 ? 'bg-yellow-500/5 border border-yellow-500/20' : 'bg-muted/40'}`}
-              >
-                <div className="w-8 text-center shrink-0">
-                  {rankIcons[i] || <span className="text-sm font-bold text-muted-foreground">#{i + 1}</span>}
+        {/* User Standing & Points */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 px-4 rounded-2xl bg-[#070b18] border border-slate-800 flex items-center gap-3">
+            <span className="text-xl">🎖️</span>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-slate-400">Live Standing</div>
+              <div className="text-sm font-black font-mono text-amber-400">Rank #{myRank}</div>
+            </div>
+          </div>
+
+          <div className="p-3 px-4 rounded-2xl bg-[#070b18] border border-slate-800 flex items-center gap-3">
+            <span className="text-xl">⚡</span>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-slate-400">Total Score</div>
+              <div className="text-sm font-black font-mono text-white">{userStats.xp.toLocaleString()} XP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Fast Accelerator Buttons */}
+      <div className="p-6 rounded-3xl bg-[#0f172a]/95 border border-slate-800 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              ⚡ Instant XP Claim Buttons
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Click karke test karein—points instant board par add honge:
+            </p>
+          </div>
+
+          {justBoosted && (
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-700 px-3 py-1 rounded-full animate-bounce">
+              ✓ {boostNotice}
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => handleAddLivePoints(150, 'DSA Problem Solved')}
+            className="p-3.5 rounded-2xl bg-[#070b18] border border-amber-800/60 hover:border-amber-500 text-left transition cursor-pointer flex items-center justify-between group"
+          >
+            <div>
+              <div className="text-xs font-bold text-white">Solve DSA Problem</div>
+              <div className="text-[10px] text-slate-400">LeetCode Two Sum / Array</div>
+            </div>
+            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-1 rounded-lg">
+              +150 XP
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleAddLivePoints(200, 'Mock Interview Cleared')}
+            className="p-3.5 rounded-2xl bg-[#070b18] border border-purple-800/60 hover:border-purple-500 text-left transition cursor-pointer flex items-center justify-between group"
+          >
+            <div>
+              <div className="text-xs font-bold text-white">Mock Interview</div>
+              <div className="text-[10px] text-slate-400">Technical Evaluation</div>
+            </div>
+            <span className="text-xs font-mono font-bold text-purple-400 bg-purple-950/80 px-2 py-1 rounded-lg">
+              +200 XP
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleAddLivePoints(100, 'Morning Routine Completed')}
+            className="p-3.5 rounded-2xl bg-[#070b18] border border-emerald-800/60 hover:border-emerald-500 text-left transition cursor-pointer flex items-center justify-between group"
+          >
+            <div>
+              <div className="text-xs font-bold text-white">Morning Routine</div>
+              <div className="text-[10px] text-slate-400">Habit & Priming Check</div>
+            </div>
+            <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2 py-1 rounded-lg">
+              +100 XP
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Live Registered Candidates Table */}
+      <div className="p-6 rounded-3xl bg-[#0f172a]/95 border border-slate-800 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-white uppercase tracking-wider">
+              Active Registered Candidates
+            </span>
+            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+              {rankedList.length} User(s) Tracked
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              if (window.confirm("Kya aap apna score 0 XP par reset karna chahte hain?")) {
+                const zeroStats = { xp: 0, streak: 1, solvedCount: 0 };
+                setUserStats(zeroStats);
+                syncUserToLeaderboard(zeroStats);
+              }
+            }}
+            className="text-[11px] text-slate-500 hover:text-rose-400 transition cursor-pointer"
+          >
+            Reset My XP
+          </button>
+        </div>
+
+        {/* Dynamic Rows */}
+        <div className="space-y-2.5">
+          {rankedList.map((competitor) => (
+            <div
+              key={competitor.id}
+              className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                competitor.isCurrentUser
+                  ? 'bg-indigo-950/40 border-indigo-500/80 shadow-lg shadow-indigo-950/40 ring-1 ring-indigo-500/50'
+                  : 'bg-[#070b18] border-slate-800/80 hover:border-slate-700'
+              }`}
+            >
+              {/* Left Column: Rank + Name + Role */}
+              <div className="flex items-center gap-3.5">
+                <span className="w-7 text-center font-black font-mono text-sm text-amber-400">
+                  #{competitor.rank}
+                </span>
+
+                <div className="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg shrink-0">
+                  {competitor.avatar}
                 </div>
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-primary">{getInitials(user.email)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm capitalize truncate">{getName(user.email)}</p>
-                  <div className="flex gap-2 mt-0.5">
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                      <BookOpen className="w-3 h-3" />{user.study}
-                    </span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                      <Code2 className="w-3 h-3" />{user.dsa}
-                    </span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                      <Trophy className="w-3 h-3" />{user.interviews}
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-white">
+                      {competitor.name} {competitor.isCurrentUser && <span className="text-indigo-400 font-normal">(You)</span>}
+                    </h4>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${competitor.badgeColor}`}>
+                      {competitor.badge}
                     </span>
                   </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{competitor.role}</p>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-foreground">{user.sessions}</p>
-                  <p className="text-xs text-muted-foreground">sessions</p>
-                </div>
-                <Badge className="bg-primary/10 text-primary shrink-0">{user.avgScore}/10</Badge>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
 
-      {/* Stats breakdown */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4 text-center">
-          <BookOpen className="w-6 h-6 text-accent mx-auto mb-1" />
-          <p className="text-2xl font-bold text-foreground">{allStudy.length}</p>
-          <p className="text-xs text-muted-foreground">Study Sessions</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <Code2 className="w-6 h-6 text-chart-3 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-foreground">{allDSA.length}</p>
-          <p className="text-xs text-muted-foreground">DSA Sessions</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <Trophy className="w-6 h-6 text-primary mx-auto mb-1" />
-          <p className="text-2xl font-bold text-foreground">{allInterview.length}</p>
-          <p className="text-xs text-muted-foreground">Interviews</p>
-        </Card>
+              {/* Right Column: Tasks Solved + XP */}
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <div className="text-xs font-bold text-slate-200">{competitor.solvedCount}</div>
+                  <div className="text-[9px] text-slate-500 uppercase">Tasks Done</div>
+                </div>
+
+                <div className="text-right min-w-[80px]">
+                  <div className="text-sm font-black font-mono text-white">{competitor.xp.toLocaleString()}</div>
+                  <div className="text-[9px] text-indigo-400 font-bold uppercase">XP Points</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
       </div>
+
     </div>
   );
 }

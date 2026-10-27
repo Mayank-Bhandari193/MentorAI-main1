@@ -10,6 +10,7 @@ import EnglishPractice from './EnglishPractice';
 import AILearning from './AILearning';
 import DSAPractice from './DSAPractice';
 import ActivityTracker from './ActivityTracker';
+import Leaderboard from './Leaderboard';
 
 // Real-world role configurations mapped to CodeSprint 2026 PPT
 const ROLE_CONFIGS = {
@@ -189,6 +190,7 @@ export default function Dashboard({ user, onLogout }) {
     }));
   };
 
+  // 🔥 UPDATED FUNCTION WITH REAL-TIME XP DISPATCH FOR LEADERBOARD
   const handleToggleTask = (taskId) => {
     const targetTask = tasks.find(t => t.id === taskId);
     if (!targetTask) return;
@@ -223,6 +225,14 @@ export default function Dashboard({ user, onLogout }) {
     if (willBeCompleted) {
       const type = targetTask.category === 'dsa' ? 'dsa' : 'study';
       logActivity(`Completed Task: ${targetTask.title}`, type);
+
+      // 🔥 AUTO-DISPATCH REAL-TIME XP POINTS TO LEADERBOARD
+      window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+        detail: {
+          points: 150,
+          reason: targetTask.title
+        }
+      }));
     }
   };
 
@@ -637,7 +647,12 @@ export default function Dashboard({ user, onLogout }) {
           {activePage === 'Focus Timer' && (
             <FocusTimer
               user={currentUser}
-              onCompleteSession={(mins) => logActivity(`Completed ${mins}m Deep Focus Sprint`, 'study')}
+              onCompleteSession={(mins) => {
+                logActivity(`Completed ${mins}m Deep Focus Sprint`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 100, reason: `${mins}m Deep Focus Sprint` }
+                }));
+              }}
             />
           )}
 
@@ -647,6 +662,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onReviewSubmitted={(review) => {
                 logActivity(`Completed Day ${review.day} Review (${review.topic})`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 80, reason: `Day ${review.day} Review (${review.topic})` }
+                }));
               }}
             />
           )}
@@ -657,6 +675,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onAssessmentComplete={(report) => {
                 logActivity(`Completed 50-Question Diagnostic Assessment (${report.score}%)`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 250, reason: `50-Question Assessment (${report.score}%)` }
+                }));
               }}
             />
           )}
@@ -667,6 +688,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onCompleteSession={(result) => {
                 logActivity(`Completed Mock Interview (${result.verdict || result.overallStatus})`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 200, reason: `Mock Technical Round (${result.verdict || result.overallStatus})` }
+                }));
               }}
             />
           )}
@@ -682,6 +706,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onCompleteRoutine={(data) => {
                 logActivity(`Logged Morning Routine (${data.percentage}% Alignment)`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 100, reason: `Morning Alignment (${data.percentage}%)` }
+                }));
               }}
             />
           )}
@@ -697,6 +724,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onCompleteSession={(report) => {
                 logActivity(`Completed English Communication Drill (${report.overallGrade})`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 120, reason: `English Pitch Drill (${report.overallGrade})` }
+                }));
               }}
             />
           )}
@@ -707,6 +737,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onCompleteLesson={(lessonTitle) => {
                 logActivity(`Mastered AI Lesson: ${lessonTitle}`, 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 150, reason: `AI Module: ${lessonTitle}` }
+                }));
               }}
             />
           )}
@@ -717,6 +750,9 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onSolveProblem={(problem) => {
                 logActivity(`Solved LeetCode #${problem.number}: ${problem.title}`, 'dsa');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 150, reason: `LeetCode #${problem.number}: ${problem.title}` }
+                }));
               }}
             />
           )}
@@ -727,26 +763,21 @@ export default function Dashboard({ user, onLogout }) {
               user={currentUser}
               onActivityLogged={(entry) => {
                 logActivity(entry.title, entry.type || 'study');
+                window.dispatchEvent(new CustomEvent('mentor_xp_event', {
+                  detail: { points: 50, reason: entry.title }
+                }));
               }}
             />
           )}
 
-          {/* FALLBACK FOR REMAINING TABS (Leaderboard) */}
-          {!['Dashboard', 'Focus Timer', 'Daily Review', 'Study Mentor', 'Interview Prep', 'AI Roadmap', 'Morning Routine', 'AI Assistant', 'English Practice', 'AI Learning', 'DSA Practice', 'Activity Tracker'].includes(activePage) && (
-            <div className={`p-10 text-center rounded-3xl border ${cardBg}`}>
-              <span className="text-4xl block mb-2">🏆</span>
-              <h2 className="text-lg font-bold text-white mb-1">{activePage} Module</h2>
-              <p className={`text-xs mb-6 ${subText}`}>Active module for {roleData.title}.</p>
-              <button
-                onClick={() => {
-                  logActivity(`Logged milestone in ${activePage}`, 'study');
-                  alert(`Task completed in ${activePage}!`);
-                }}
-                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow cursor-pointer"
-              >
-                Log Completion (+1)
-              </button>
-            </div>
+          {/* PAGE 13: LEADERBOARD */}
+          {activePage === 'Leaderboard' && (
+            <Leaderboard
+              user={currentUser}
+              onClaimPoints={(pts, reason) => {
+                logActivity(`Earned +${pts} XP (${reason})`, 'study');
+              }}
+            />
           )}
 
         </div>
